@@ -3,6 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 var useStdio = args.Contains("--stdio");
+var rootPath = GetRootPath(args);
+
+// Set the static root path for file operations
+FileOperationConfig.RootPath = rootPath;
 
 if (useStdio)
 {
@@ -16,9 +20,6 @@ if (useStdio)
         .WithStdioServerTransport()
         .WithTools<FileOperationTools>();
 
-    // Register FileOperationTools for HTTP bridging (if you need to call methods directly)
-    builder.Services.AddSingleton<FileOperationTools>();
-
     // Start HTTP listener
     builder.Services.AddHostedService<HttpListenerService>();
 
@@ -30,6 +31,7 @@ else
 
     builder.Services
         .AddMcpServer()
+        .WithHttpTransport()
         .WithTools<FileOperationTools>();
 
     var app = builder.Build();
@@ -37,4 +39,36 @@ else
     app.MapMcp();
 
     await app.RunAsync();
+}
+
+static string GetRootPath(string[] args)
+{
+    // Look for --root-path argument
+    for (int i = 0; i < args.Length - 1; i++)
+    {
+        if (string.Equals(args[i], "--root-path", StringComparison.OrdinalIgnoreCase))
+        {
+            var path = args[i + 1];
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                return Path.GetFullPath(path);
+            }
+        }
+    }
+
+    // Also support --root-path=value format
+    foreach (var arg in args)
+    {
+        if (arg.StartsWith("--root-path=", StringComparison.OrdinalIgnoreCase))
+        {
+            var path = arg["--root-path=".Length..];
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                return Path.GetFullPath(path);
+            }
+        }
+    }
+
+    // Default to current directory
+    return Environment.CurrentDirectory;
 }
