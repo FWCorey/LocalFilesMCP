@@ -24,7 +24,7 @@ public sealed class HttpListenerService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private HttpListener? _listener;
     
-    public HttpListenerService(ILogger<HttpListenerService> logger, IServiceScopeFactory scopeFactory, ushort port)
+    public HttpListenerService(ILogger<HttpListenerService> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;

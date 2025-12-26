@@ -18,6 +18,8 @@
 
     <!-- Set up the MCP server to be a single file executable -->
     <PublishSingleFile>true</PublishSingleFile>
+    <GenerateWebConfig>false</GenerateWebConfig>
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
 
     <!-- Set recommended package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -26,7 +28,7 @@
     <PackageTags>AI; MCP; server; stdio</PackageTags>
     <Description>An MCP server using the MCP C# SDK to allow an agent read-only access to a folder. Handy for allowing your coding agent access to API documentation for example.</Description>
     <ApplicationIcon>MCP_Icon.ico</ApplicationIcon>
-    <PublishAot>True</PublishAot>
+    <PublishAot>False</PublishAot>
     <DebugType>None</DebugType>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <Title>Local Files MCP Server</Title>
@@ -46,6 +48,7 @@
 
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.5.0-preview.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

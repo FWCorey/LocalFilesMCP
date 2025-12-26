@@ -14,14 +14,16 @@ LocalFilesMCP is an MCP server for file system operations, built with C# and the
   dotnet run -- --stdio --root-path C:\My\Sandbox
   ```
 
-- `--root-path=<path>`  
-  Alternative syntax for specifying the root directory.  
-  Example:  
+- `--port`  
+  Listener port for the server.  
   ```
-  dotnet run -- --stdio --root-path=/home/user/sandbox
+  dotnet run -- --stdio --port 5000 --root-path=/home/user/sandbox
   ```
 
 If `--root-path` is not specified, the current working directory is used as the root.
+If `--port` is not specified, the server will listen on port 5000.
+If `--stdio` is not specified, the server will use http.
+
 
 ## Adding LocalFilesMCP to LM Studio
 

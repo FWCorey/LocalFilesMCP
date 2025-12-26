@@ -1,85 +1,75 @@
+using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-var useStdio = args.Contains("--stdio");
-var rootPath = GetRootPath(args);
-ushort port = GetPortFromArgs(args);
-
-
-
-// Set the static root path for file operations
-MCPServerConfig.RootPath = rootPath;
-MCPServerConfig.HttpPort = port;
-
-if (useStdio)
+Option<bool> stdioOption = new("--stdio");
+Option<string> rootPathOption = new("--root-path")
 {
-    var builder = Host.CreateApplicationBuilder(args);
-    // Configure all logs to go to stderr (stdout is used for the MCP protocol messages).
-    builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
-
-    // MCP over stdio
-    builder.Services
-        .AddMcpServer()
-        .WithStdioServerTransport()
-        .WithTools<FileOperationTools>();
-
-    // Start HTTP listener
-    builder.Services.AddHostedService<HttpListenerService>();
-
-    await builder.Build().RunAsync();
-}
-else
+    Arity = ArgumentArity.ZeroOrOne
+};
+Option<ushort> portOption = new("--port")
 {
-    var builder = WebApplication.CreateBuilder(args);
+    DefaultValueFactory = _ => (ushort)5000
+};
 
-    // Configure the server to listen on the specified port
-    builder.WebHost.UseUrls($"http://localhost:{port}");
+RootCommand rootCommand = new("LocalFilesMCP server");
+rootCommand.Options.Add(stdioOption);
+rootCommand.Options.Add(rootPathOption);
+rootCommand.Options.Add(portOption);
 
-    builder.Services
-        .AddMcpServer()
-        .WithHttpTransport()
-        .WithTools<FileOperationTools>();
+rootCommand.SetAction(async (parseResult, cancellationToken) =>
+{
+    bool useStdio = parseResult.GetValue(stdioOption);
+    string rootPath = parseResult.GetValue(rootPathOption) ?? Environment.CurrentDirectory;
+    rootPath = Path.GetFullPath(rootPath);
+    ushort port = parseResult.GetValue(portOption);
 
-    var app = builder.Build();
+    MCPServerConfig.RootPath = rootPath;
+    MCPServerConfig.HttpPort = port;
 
-    app.MapMcp();
-
-    await app.RunAsync();
-}
-
-static ushort GetPortFromArgs(string[] args) {
-
-    for (int i = 0; i < args.Length - 1; i++)
+    if (useStdio)
     {
-        if (string.Equals(args[i], "--port", StringComparison.OrdinalIgnoreCase))
-        {
-            if (ushort.TryParse(args[i + 1], out var port))
-            {
-                return port;
-            }
-        }
+        var builder = Host.CreateApplicationBuilder(args);
+        // Configure all logs to go to stderr (stdout is used for the MCP protocol messages).
+        builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
+
+        // MCP over stdio
+        builder.Services
+            .AddMcpServer()
+            .WithStdioServerTransport()
+            .WithTools<FileOperationTools>();
+
+        // Start HTTP listener
+        builder.Services.AddHostedService<HttpListenerService>();
+
+        await builder.Build().RunAsync(cancellationToken);
+    } else {
+        // 1. Use WebApplication instead of Host for HTTP support
+        var builder = WebApplication.CreateBuilder(args);
+
+        // 2. Configure Kestrel to listen on the specific port requested via args
+        builder.WebHost.ConfigureKestrel(options => {
+            options.ListenLocalhost(port);
+        });
+
+        // 3. Register MCP services
+        builder.Services
+            .AddMcpServer()
+            .WithHttpTransport() // Registers SSE support
+            .WithTools<FileOperationTools>();
+
+        var app = builder.Build();
+
+        // 4. IMPORTANT: Map the SSE endpoint so VS can connect to it
+        // Depending on your specific MCP library version, this might be MapMcpServer, MapMcp, or similar.
+        // The standard path is usually "/mcp" or "/sse".
+        app.MapMcp("/mcp");
+
+        await app.RunAsync(cancellationToken);
     }
 
-    // Default port
-    return 5000;
-}
+    return 0;
+});
 
-static string GetRootPath(string[] args)
-{
-    // Look for --root-path=value argument
-    foreach (var arg in args)
-    {
-        if (arg.StartsWith("--root-path=", StringComparison.OrdinalIgnoreCase))
-        {
-            var path = arg["--root-path=".Length..];
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                return Path.GetFullPath(path);
-            }
-        }
-    }
-
-    // Default to current directory
-    return Environment.CurrentDirectory;
-}
+return await rootCommand.Parse(args).InvokeAsync();
