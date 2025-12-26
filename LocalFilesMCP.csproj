@@ -10,7 +10,8 @@
     <!-- Set up the NuGet package to be an MCP server -->
     <PackAsTool>true</PackAsTool>
     <PackageType>McpServer</PackageType>
-
+    <PackageIcon>MCP_Icon.png</PackageIcon>
+    
     <!-- Set up the MCP server to be a self-contained application that does not rely on a shared framework -->
     <SelfContained>true</SelfContained>
     <PublishSelfContained>true</PublishSelfContained>
@@ -26,6 +27,8 @@
     <Description>An MCP server using the MCP C# SDK to allow an agent read-only access to a folder. Handy for allowing your coding agent access to API documentation for example.</Description>
     <ApplicationIcon>MCP_Icon.ico</ApplicationIcon>
     <PublishAot>True</PublishAot>
+    <DebugType>None</DebugType>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <Title>Local Files MCP Server</Title>
     <Version>0.2.0</Version>
     <Authors>FWCorey</Authors>
@@ -43,6 +46,17 @@
 
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.5.0-preview.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="MCP_Icon.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="MCP_Icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
