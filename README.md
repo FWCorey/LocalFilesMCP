@@ -26,7 +26,7 @@ If `--root-path` is not specified, the current working directory is used as the 
 ## Adding LocalFilesMCP to LM Studio
 
 1. **Build the project**  
-   Run `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true` to produce a standalone executable.
+   Run `dotnet publish -c Release -r win-x64` to produce a standalone executable.
 
 2. **Locate the executable**  
    The output will be in `bin/Release/net10.0/<your-platform>/publish/`.
@@ -47,8 +47,7 @@ If `--root-path` is not specified, the current working directory is used as the 
       "command": "/absolute/path/to/LocalFilesMCP", // Update this path
       "args": [
         "--stdio",
-        "--root-path",
-        "/absolute/path/to/your/sandbox" // Update this path
+        "--root-path=/absolute/path/to/your/sandbox"
       ]
     }
   }

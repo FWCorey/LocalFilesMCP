@@ -67,20 +67,7 @@ static ushort GetPortFromArgs(string[] args) {
 
 static string GetRootPath(string[] args)
 {
-    // Look for --root-path argument
-    for (int i = 0; i < args.Length - 1; i++)
-    {
-        if (string.Equals(args[i], "--root-path", StringComparison.OrdinalIgnoreCase))
-        {
-            var path = args[i + 1];
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                return Path.GetFullPath(path);
-            }
-        }
-    }
-
-    // Also support --root-path=value format
+    // Look for --root-path=value argument
     foreach (var arg in args)
     {
         if (arg.StartsWith("--root-path=", StringComparison.OrdinalIgnoreCase))
