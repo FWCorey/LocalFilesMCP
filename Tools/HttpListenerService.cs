@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 public sealed class HttpListenerService : BackgroundService
 {
-    private const string Prefix = "http://localhost:5000/";
+    private const string Prefix = "http://localhost:";
     private const string ToolRoute = "/mcp";
 
     private static readonly string[] AllowedMethods = { "GET", "POST", "OPTIONS" };
@@ -23,8 +23,8 @@ public sealed class HttpListenerService : BackgroundService
     private readonly ILogger<HttpListenerService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private HttpListener? _listener;
-
-    public HttpListenerService(ILogger<HttpListenerService> logger, IServiceScopeFactory scopeFactory)
+    
+    public HttpListenerService(ILogger<HttpListenerService> logger, IServiceScopeFactory scopeFactory, ushort port)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
@@ -37,7 +37,7 @@ public sealed class HttpListenerService : BackgroundService
         try
         {
             _listener.Start();
-            _logger.LogInformation("Local MCP bridge listening on {Prefix}", Prefix);
+            _logger.LogInformation($"Local MCP bridge listening on {Prefix}{MCPServerConfig.HttpPort}/");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -88,7 +88,7 @@ public sealed class HttpListenerService : BackgroundService
             IgnoreWriteExceptions = true
         };
 
-        listener.Prefixes.Add(Prefix);
+        listener.Prefixes.Add($"{Prefix}{MCPServerConfig.HttpPort}/");
         return listener;
     }
 

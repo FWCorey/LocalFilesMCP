@@ -13,7 +13,7 @@ public class FileOperationTools
 
     public FileOperationTools()
     {
-        _rootPath = Path.GetFullPath(FileOperationConfig.RootPath);
+        _rootPath = Path.GetFullPath(MCPServerConfig.RootPath);
         _currentPath = _rootPath;
     }
 

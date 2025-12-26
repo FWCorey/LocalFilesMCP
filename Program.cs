@@ -4,9 +4,13 @@ using Microsoft.Extensions.Logging;
 
 var useStdio = args.Contains("--stdio");
 var rootPath = GetRootPath(args);
+ushort port = GetPortFromArgs(args);
+
+
 
 // Set the static root path for file operations
-FileOperationConfig.RootPath = rootPath;
+MCPServerConfig.RootPath = rootPath;
+MCPServerConfig.HttpPort = port;
 
 if (useStdio)
 {
@@ -29,6 +33,9 @@ else
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // Configure the server to listen on the specified port
+    builder.WebHost.UseUrls($"http://localhost:{port}");
+
     builder.Services
         .AddMcpServer()
         .WithHttpTransport()
@@ -39,6 +46,23 @@ else
     app.MapMcp();
 
     await app.RunAsync();
+}
+
+static ushort GetPortFromArgs(string[] args) {
+
+    for (int i = 0; i < args.Length - 1; i++)
+    {
+        if (string.Equals(args[i], "--port", StringComparison.OrdinalIgnoreCase))
+        {
+            if (ushort.TryParse(args[i + 1], out var port))
+            {
+                return port;
+            }
+        }
+    }
+
+    // Default port
+    return 5000;
 }
 
 static string GetRootPath(string[] args)
