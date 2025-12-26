@@ -237,7 +237,7 @@ public sealed class HttpListenerService : BackgroundService
     private static (HttpStatusCode StatusCode, object Payload) ExecuteTool(FileOperationTools tools, ToolInvocation invocation)
     {
         var args = invocation.Args;
-        var toolName = invocation.Tool.Trim();
+        var toolName = invocation.Tool!.Trim();
 
         return toolName switch
         {

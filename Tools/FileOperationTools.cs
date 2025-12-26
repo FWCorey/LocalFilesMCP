@@ -5,20 +5,25 @@ using ModelContextProtocol.Server;
 /// <summary>
 /// MCP tools for file system operations.
 /// </summary>
-internal class FileOperationTools
+public class FileOperationTools
 {
     // Root of the accessible file system for this tool. All operations are confined under this path.
-    private static readonly string RootPath = Path.GetFullPath(Environment.CurrentDirectory);
+    private readonly string _rootPath;
+    private string _currentPath;
 
-    private static string CurrentPath { get; set; } = Environment.CurrentDirectory;
+    public FileOperationTools()
+    {
+        _rootPath = Path.GetFullPath(FileOperationConfig.RootPath);
+        _currentPath = _rootPath;
+    }
 
-    private static string CurrentRelativePath
+    private string CurrentRelativePath
     {
         get
         {
             try
             {
-                var relativePath = Path.GetRelativePath(RootPath, CurrentPath);
+                var relativePath = Path.GetRelativePath(_rootPath, _currentPath);
                 return string.IsNullOrEmpty(relativePath) ? "." : relativePath;
             }
             catch
@@ -32,7 +37,7 @@ internal class FileOperationTools
     /// Resolves and validates a user-provided path so it is confined under RootPath without throwing.
     /// Returns false with an error message when invalid. When true, safePath is an absolute path.
     /// </summary>
-    private static bool TryGetSafePath(string? path, bool mustExist, bool expectDirectory, out string? safePath, out string? error)
+    private bool TryGetSafePath(string? path, bool mustExist, bool expectDirectory, out string? safePath, out string? error)
     {
         safePath = null;
         error = null;
@@ -67,7 +72,7 @@ internal class FileOperationTools
         string fullPath;
         try
         {
-            var combined = Path.Combine(CurrentPath, path);
+            var combined = Path.Combine(_currentPath, path);
             fullPath = Path.GetFullPath(combined);
         }
         catch (Exception ex)
@@ -80,14 +85,14 @@ internal class FileOperationTools
         try
         {
             var sep = Path.DirectorySeparatorChar.ToString();
-            rootWithSep = RootPath.EndsWith(sep, StringComparison.Ordinal) ? RootPath : RootPath + sep;
+            rootWithSep = _rootPath.EndsWith(sep, StringComparison.Ordinal) ? _rootPath : _rootPath + sep;
         }
         catch
         {
-            rootWithSep = RootPath + Path.DirectorySeparatorChar;
+            rootWithSep = _rootPath + Path.DirectorySeparatorChar;
         }
 
-        if (!fullPath.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase))
+        if (!fullPath.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase) && !fullPath.Equals(_rootPath, StringComparison.OrdinalIgnoreCase))
         {
             error = "Error: The resolved path is outside of the allowed root.";
             return false;
@@ -247,7 +252,7 @@ internal class FileOperationTools
             string candidate;
             try
             {
-                candidate = Path.GetFullPath(Path.Combine(RootPath, path));
+                candidate = Path.GetFullPath(Path.Combine(_rootPath, path));
             }
             catch (Exception ex)
             {
@@ -258,14 +263,14 @@ internal class FileOperationTools
             try
             {
                 var sep = Path.DirectorySeparatorChar.ToString();
-                rootWithSep = RootPath.EndsWith(sep, StringComparison.Ordinal) ? RootPath : RootPath + sep;
+                rootWithSep = _rootPath.EndsWith(sep, StringComparison.Ordinal) ? _rootPath : _rootPath + sep;
             }
             catch
             {
-                rootWithSep = RootPath + Path.DirectorySeparatorChar;
+                rootWithSep = _rootPath + Path.DirectorySeparatorChar;
             }
 
-            if (!candidate.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase))
+            if (!candidate.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase) && !candidate.Equals(_rootPath, StringComparison.OrdinalIgnoreCase))
             {
                 return "Error: Target directory is outside of the allowed root.";
             }
@@ -282,7 +287,7 @@ internal class FileOperationTools
                 return $"Error: Unable to verify directory: {ex.Message}";
             }
 
-            CurrentPath = candidate;
+            _currentPath = candidate;
             return CurrentRelativePath;
         }
         catch (IOException ioEx)

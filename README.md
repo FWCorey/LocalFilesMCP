@@ -1,98 +1,69 @@
-# MCP Server
+# LocalFilesMCP
 
-This README was created using the C# MCP server project template.
-It demonstrates how you can easily create an MCP server using C# and publish it as a NuGet package.
+LocalFilesMCP is an MCP server for file system operations, built with C# and the ModelContextProtocol SDK. It allows you to interact with the file system in a secure, sandboxed manner via the MCP protocol.
 
-The MCP server is built as a self-contained application and does not require the .NET runtime to be installed on the target machine.
-However, since it is self-contained, it must be built for each target platform separately.
-By default, the template is configured to build for:
-* `win-x64`
-* `win-arm64`
-* `osx-arm64`
-* `linux-x64`
-* `linux-arm64`
-* `linux-musl-x64`
+## Command-Line Arguments
 
-If your users require more platforms to be supported, update the list of runtime identifiers in the project's `<RuntimeIdentifiers />` element.
+- `--stdio`  
+  Runs the server using standard input/output (stdio) transport. This is required for integration with tools like LM Studio or VS Code.
 
-See [aka.ms/nuget/mcp/guide](https://aka.ms/nuget/mcp/guide) for the full guide.
+- `--root-path <path>`  
+  Sets the root directory for all file operations. All file and directory access will be confined to this path.  
+  Example:  
+  ```
+  dotnet run -- --stdio --root-path C:\My\Sandbox
+  ```
 
-Please note that this template is currently in an early preview stage. If you have feedback, please take a [brief survey](http://aka.ms/dotnet-mcp-template-survey).
+- `--root-path=<path>`  
+  Alternative syntax for specifying the root directory.  
+  Example:  
+  ```
+  dotnet run -- --stdio --root-path=/home/user/sandbox
+  ```
 
-## Checklist before publishing to NuGet.org
+If `--root-path` is not specified, the current working directory is used as the root.
 
-- Test the MCP server locally using the steps below.
-- Update the package metadata in the .csproj file, in particular the `<PackageId>`.
-- Update `.mcp/server.json` to declare your MCP server's inputs.
-  - See [configuring inputs](https://aka.ms/nuget/mcp/guide/configuring-inputs) for more details.
-- Pack the project using `dotnet pack`.
+## Adding LocalFilesMCP to LM Studio
 
-The `bin/Release` directory will contain the package file (.nupkg), which can be [published to NuGet.org](https://learn.microsoft.com/nuget/nuget-org/publish-a-package).
+1. **Build the project**  
+   Run `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true` to produce a standalone executable.
 
-## Developing locally
+2. **Locate the executable**  
+   The output will be in `bin/Release/net10.0/<your-platform>/publish/`.
 
-To test this MCP server from source code (locally) without using a built MCP server package, you can configure your IDE to run the project directly using `dotnet run`.
+3. **Configure LM Studio**  
+   Create or edit the `mcp.json` file in your LM Studio workspace directory.
 
-```json
-{
-  "servers": {
-    "LocalFilesMCP": {
-      "type": "http",
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "<PATH TO PROJECT DIRECTORY>"
-      ]
-    }
-  }
-}
-```
+4. **Add the server configuration**  
+   Use the following example, updating the `command` path to your published executable and the `--root-path` as needed.
 
-## Testing the MCP Server
-
-Once configured, you can ask Copilot Chat for a random number, for example, `Give me 3 random numbers`. It should prompt you to use the `get_random_number` tool on the `LocalFilesMCP` MCP server and show you the results.
-
-## Publishing to NuGet.org
-
-1. Run `dotnet pack -c Release` to create the NuGet package
-2. Publish to NuGet.org with `dotnet nuget push bin/Release/*.nupkg --api-key <your-api-key> --source https://api.nuget.org/v3/index.json`
-
-## Using the MCP Server from NuGet.org
-
-Once the MCP server package is published to NuGet.org, you can configure it in your preferred IDE. Both VS Code and Visual Studio use the `dnx` command to download and install the MCP server package from NuGet.org.
-
-- **VS Code**: Create a `<WORKSPACE DIRECTORY>/.vscode/mcp.json` file
-- **Visual Studio**: Create a `<SOLUTION DIRECTORY>\.mcp.json` file
-
-For both VS Code and Visual Studio, the configuration file uses the following server definition:
+### Example `mcp.json` for LM Studio
 
 ```json
 {
   "servers": {
     "LocalFilesMCP": {
       "type": "stdio",
-      "command": "dnx",
+      "command": "/absolute/path/to/LocalFilesMCP", // Update this path
       "args": [
-        "<your package ID here>",
-        "--version",
-        "<your package version here>",
-        "--yes"
+        "--stdio",
+        "--root-path",
+        "/absolute/path/to/your/sandbox" // Update this path
       ]
     }
   }
 }
 ```
 
-## More information
+- Replace `/absolute/path/to/LocalFilesMCP` with the full path to your published executable.
+- Replace `/absolute/path/to/your/sandbox` with the directory you want to use as the root for file operations.
 
-.NET MCP servers use the [ModelContextProtocol](https://www.nuget.org/packages/ModelContextProtocol) C# SDK. For more information about MCP:
+## More Information
 
-- [Official Documentation](https://modelcontextprotocol.io/)
-- [Protocol Specification](https://spec.modelcontextprotocol.io/)
-- [GitHub Organization](https://github.com/modelcontextprotocol)
+- [ModelContextProtocol Documentation](https://modelcontextprotocol.io/)
+- [Use MCP servers in LM Studio](https://lmstudio.ai/docs/app/mcp)
+- [Use MCP servers in VS Code](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)
 
-Refer to the VS Code or Visual Studio documentation for more information on configuring and using MCP servers:
+---
 
-- [Use MCP servers in VS Code (Preview)](https://code.visualstudio.com/docs/copilot/chat/mcp-servers)
-- [Use MCP servers in Visual Studio (Preview)](https://learn.microsoft.com/visualstudio/ide/mcp-servers)
+This README provides setup, usage, and integration instructions for your solution.
