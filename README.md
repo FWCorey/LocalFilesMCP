@@ -14,19 +14,21 @@ LocalFilesMCP is an MCP server for file system operations, built with C# and the
   dotnet run -- --stdio --root-path C:\My\Sandbox
   ```
 
-- `--root-path=<path>`  
-  Alternative syntax for specifying the root directory.  
-  Example:  
+- `--port`  
+  Listener port for the server.  
   ```
-  dotnet run -- --stdio --root-path=/home/user/sandbox
+  dotnet run -- --stdio --port 5000 --root-path=/home/user/sandbox
   ```
 
 If `--root-path` is not specified, the current working directory is used as the root.
+If `--port` is not specified, the server will listen on port 5000.
+If `--stdio` is not specified, the server will use http.
+
 
 ## Adding LocalFilesMCP to LM Studio
 
 1. **Build the project**  
-   Run `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true` to produce a standalone executable.
+   Run `dotnet publish -c Release -r win-x64` to produce a standalone executable.
 
 2. **Locate the executable**  
    The output will be in `bin/Release/net10.0/<your-platform>/publish/`.
@@ -47,8 +49,7 @@ If `--root-path` is not specified, the current working directory is used as the 
       "command": "/absolute/path/to/LocalFilesMCP", // Update this path
       "args": [
         "--stdio",
-        "--root-path",
-        "/absolute/path/to/your/sandbox" // Update this path
+        "--root-path=/absolute/path/to/your/sandbox"
       ]
     }
   }
