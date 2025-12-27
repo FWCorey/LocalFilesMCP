@@ -33,7 +33,7 @@ If `--stdio` is not specified, the server will use HTTP/SSE transport.
 ## Adding LocalFilesMCP to LM Studio
 
 1. **Build the project**
-Run `dotnet publish -c Release -r win-x64` to produce a standalone executable.
+Run `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true` to produce a standalone executable.
 2. **Locate the executable**
 The output will be in `bin/Release/net10.0/<your-platform>/publish/`.
 3. **Configure LM Studio**
