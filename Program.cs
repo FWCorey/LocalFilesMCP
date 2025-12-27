@@ -1,74 +1,75 @@
+using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-var useStdio = args.Contains("--stdio");
-var rootPath = GetRootPath(args);
-
-// Set the static root path for file operations
-FileOperationConfig.RootPath = rootPath;
-
-if (useStdio)
+Option<bool> stdioOption = new("--stdio");
+Option<string> rootPathOption = new("--root-path")
 {
-    var builder = Host.CreateApplicationBuilder(args);
-    // Configure all logs to go to stderr (stdout is used for the MCP protocol messages).
-    builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
-
-    // MCP over stdio
-    builder.Services
-        .AddMcpServer()
-        .WithStdioServerTransport()
-        .WithTools<FileOperationTools>();
-
-    // Start HTTP listener
-    builder.Services.AddHostedService<HttpListenerService>();
-
-    await builder.Build().RunAsync();
-}
-else
+    Arity = ArgumentArity.ZeroOrOne
+};
+Option<ushort> portOption = new("--port")
 {
-    var builder = WebApplication.CreateBuilder(args);
+    DefaultValueFactory = _ => (ushort)5000
+};
 
-    builder.Services
-        .AddMcpServer()
-        .WithHttpTransport()
-        .WithTools<FileOperationTools>();
+RootCommand rootCommand = new("LocalFilesMCP server");
+rootCommand.Options.Add(stdioOption);
+rootCommand.Options.Add(rootPathOption);
+rootCommand.Options.Add(portOption);
 
-    var app = builder.Build();
-
-    app.MapMcp();
-
-    await app.RunAsync();
-}
-
-static string GetRootPath(string[] args)
+rootCommand.SetAction(async (parseResult, cancellationToken) =>
 {
-    // Look for --root-path argument
-    for (int i = 0; i < args.Length - 1; i++)
+    bool useStdio = parseResult.GetValue(stdioOption);
+    string rootPath = parseResult.GetValue(rootPathOption) ?? Environment.CurrentDirectory;
+    rootPath = Path.GetFullPath(rootPath);
+    ushort port = parseResult.GetValue(portOption);
+
+    MCPServerConfig.RootPath = rootPath;
+    MCPServerConfig.HttpPort = port;
+
+    if (useStdio)
     {
-        if (string.Equals(args[i], "--root-path", StringComparison.OrdinalIgnoreCase))
-        {
-            var path = args[i + 1];
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                return Path.GetFullPath(path);
-            }
-        }
+        var builder = Host.CreateApplicationBuilder(args);
+        // Configure all logs to go to stderr (stdout is used for the MCP protocol messages).
+        builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
+
+        // MCP over stdio
+        builder.Services
+            .AddMcpServer()
+            .WithStdioServerTransport()
+            .WithTools<FileOperationTools>();
+
+        // Start HTTP listener
+        builder.Services.AddHostedService<HttpListenerService>();
+
+        await builder.Build().RunAsync(cancellationToken);
+    } else {
+        // 1. Use WebApplication instead of Host for HTTP support
+        var builder = WebApplication.CreateBuilder(args);
+
+        // 2. Configure Kestrel to listen on the specific port requested via args
+        builder.WebHost.ConfigureKestrel(options => {
+            options.ListenLocalhost(port);
+        });
+
+        // 3. Register MCP services
+        builder.Services
+            .AddMcpServer()
+            .WithHttpTransport() // Registers SSE support
+            .WithTools<FileOperationTools>();
+
+        var app = builder.Build();
+
+        // 4. IMPORTANT: Map the SSE endpoint so VS can connect to it
+        // Depending on your specific MCP library version, this might be MapMcpServer, MapMcp, or similar.
+        // The standard path is usually "/mcp" or "/sse".
+        app.MapMcp("/mcp");
+
+        await app.RunAsync(cancellationToken);
     }
 
-    // Also support --root-path=value format
-    foreach (var arg in args)
-    {
-        if (arg.StartsWith("--root-path=", StringComparison.OrdinalIgnoreCase))
-        {
-            var path = arg["--root-path=".Length..];
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                return Path.GetFullPath(path);
-            }
-        }
-    }
+    return 0;
+});
 
-    // Default to current directory
-    return Environment.CurrentDirectory;
-}
+return await rootCommand.Parse(args).InvokeAsync();
