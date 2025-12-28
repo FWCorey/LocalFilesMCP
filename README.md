@@ -85,6 +85,35 @@ Use the following example, updating the `command` path to your published executa
 
 ```
 
+## Tools
+
+The following tools are available in the LocalFilesMCP project:
+
+- **ListFolders**: Lists folders in the specified directory.
+  - **Description**: Lists all folders in the given directory. Defaults to the current directory if no directory is specified.
+  - **Parameters**:
+    - `directory` (optional): The directory to list.
+
+- **ListFiles**: Lists files in the specified directory.
+  - **Description**: Lists all files in the given directory. Defaults to the current directory if no directory is specified.
+  - **Parameters**:
+    - `directory` (optional): The directory to list.
+
+- **ReadFileText**: Reads the text contents of a file.
+  - **Description**: Reads and returns the text content of the specified file.
+  - **Parameters**:
+    - `path`: The path to the file to read.
+
+- **ReadBinaryFile**: Reads the binary contents of a file.
+  - **Description**: Reads and returns the binary content of the specified file.
+  - **Parameters**:
+    - `path`: The path to the file to read.
+
+- **ChangeDir**: Changes the current working directory within the root.
+  - **Description**: Changes the current working directory to the specified path and returns the new absolute path or an error message.
+  - **Parameters**:
+    - `path`: The target directory path, relative to the root. Absolute paths or drive letters are not allowed.
+
 ## More Information
 
 * [ModelContextProtocol Documentation](https://modelcontextprotocol.io/)
