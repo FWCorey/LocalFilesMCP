@@ -103,6 +103,8 @@ Must start with a **# Volume Description** header.
 You may include any user comments in this header, they will not be returned to the agent.
 You may include additional sections as needed for your specific LLM agent.
 
+Recommended to use a filename that starts with a "." to infer it is hidden.
+
 Recommended to include the following sections:
 - **## Purpose**: A brief explanation of what the volume contains and how agents should interpret it.
 - **## Notes**: Any important details or caveats about the volume, such as:
