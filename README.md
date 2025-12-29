@@ -1,7 +1,9 @@
 # LocalFilesMCP
 
 LocalFilesMCP is an MCP server for file system operations, built with C# and the ModelContextProtocol SDK.
-It allows you to interact with the file system in a secure, sandboxed manner via the MCP protocol.
+It allows an Agent to interact with the file system in a secure, sandboxed manner via the MCP protocol.
+
+---
 
 ## Command-Line Arguments
 
@@ -29,6 +31,8 @@ dotnet run -- --port 5000 --root-path "/home/user/sandbox"
 If `--root-path` is not specified, the current working directory is used as the root.
 If `--port` is not specified, the server will listen on port 5000.
 If `--stdio` is not specified, the server will use HTTP/SSE transport.
+
+---
 
 ## Adding LocalFilesMCP to LM Studio
 
@@ -85,9 +89,50 @@ Use the following example, updating the `command` path to your published executa
 
 ```
 
+---
+
+## Volume Description
+
+The Volume Description file is used to inform agents about the contents and purpose of the filesystem volume exposed
+via MCP. This helps agents like CoPilot and Cursor understand how to interact with the files and directories within
+the volume and not override the solution files context. The description should be clear and concise, providing essential
+information without overwhelming detail.
+
+Must be in markdown format.
+Must start with a **# Volume Description** header.
+You may include any user comments in this header, they will not be returned to the agent.
+You may include additional sections as needed for your specific LLM agent.
+
+Recommended to include the following sections:
+- **## Purpose**: A brief explanation of what the volume contains and how agents should interpret it.
+- **## Notes**: Any important details or caveats about the volume, such as:
+  - Paths are relative to the volume root.
+  - This volume may or may not contain project files.
+  - This volume is read-only.
+
+### Example:
+```markdown
+# Volume Description
+
+This is a read-only filesystem volume exposed via MCP.
+
+## Purpose
+This volume contains files and directories that the agent can read and analyze to assist with queries about FooBar projects.
+
+## Notes
+- Paths are relative to the volume root.
+- This volume may contain code files for example only but will not contain any project files.
+- This volume is read-only.
+```
+---
+
 ## Tools
 
 The following tools are available in the LocalFilesMCP project:
+
+- **GetVolumeDescription**: Retrieves the volume description.
+  - **Description**: Returns a markdown string describing the contents and purpose of the filesystem volume.
+  - **Parameters**: None.
 
 - **ListFolders**: Lists folders in the specified directory.
   - **Description**: Lists all folders in the given directory. Defaults to the current directory if no directory is specified.
