@@ -37,7 +37,7 @@ public class FileOperationTools
     /// Resolves and validates a user-provided path so it is confined under RootPath without throwing.
     /// Returns false with an error message when invalid. When true, safePath is an absolute path.
     /// </summary>
-    private bool TryGetSafePath(string? path, bool mustExist, bool expectDirectory, out string? safePath, out string? error)
+    internal bool TryGetSafePath(string? path, bool mustExist, bool expectDirectory, out string? safePath, out string? error)
     {
         safePath = null;
         error = null;
@@ -131,7 +131,7 @@ public class FileOperationTools
     }
 
     [McpServerTool]
-    [Description("Lists folders in the specified directory.")]
+    [Description("Lists folders in the specified directory of this volume.")]
     public string[] ListFolders(
         [Description("Directory to list. Defaults to the current directory when not provided.")] string? directory = null)
     {
@@ -153,9 +153,9 @@ public class FileOperationTools
     }
 
     [McpServerTool]
-    [Description("Lists files in the specified directory.")]
+    [Description("Lists files in the specified directory of this volume.")]
     public string[] ListFiles(
-        [Description("Directory to list. Defaults to the current directory when not provided.")] string? directory = null)
+        [Description("Directory in volume to list. Defaults to the current directory when not provided.")] string? directory = null)
     {
         var dirArg = string.IsNullOrWhiteSpace(directory) ? "." : directory;
         if (!TryGetSafePath(dirArg, mustExist: true, expectDirectory: true, out var dir, out _))
@@ -175,7 +175,7 @@ public class FileOperationTools
     }
 
     [McpServerTool]
-    [Description("Reads the text contents of a file.")]
+    [Description("Reads the text contents of a file in this volume.")]
     public string ReadFileText(
         [Description("Path to the file to read.")] string path)
     {
@@ -190,22 +190,22 @@ public class FileOperationTools
         }
         catch (IOException ioEx)
         {
-            return $"Error: I/O failure while reading file: {ioEx.Message}";
+            return $"Error: I/O failure while reading file: {ioEx.Message} in this volume";
         }
         catch (UnauthorizedAccessException uaEx)
         {
-            return $"Error: Access denied while reading file: {uaEx.Message}";
+            return $"Error: Access denied while reading file: {uaEx.Message} in this volume";
         }
         catch (Exception ex)
         {
-            return $"Error: Unexpected failure while reading file: {ex.Message}";
+            return $"Error: Unexpected failure while reading file: {ex.Message} in this volume";
         }
     }
 
     [McpServerTool]
-    [Description("Reads the binary contents of a file.")]
+    [Description("Reads the binary contents of a file in this volume.")]
     public byte[] ReadBinaryFile(
-        [Description("Path to the file to read.")] string path)
+        [Description("Path to the file  in this volume to read.")] string path)
     {
         if (!TryGetSafePath(path, mustExist: true, expectDirectory: false, out var safePath, out _))
         {
@@ -223,9 +223,9 @@ public class FileOperationTools
     }
 
     [McpServerTool]
-    [Description("Changes the current working directory within the root and returns the new absolute path or an error message.")]
+    [Description("Changes the current working directory within the volume root and returns the new absolute path or an error message.")]
     public string ChangeDir(
-        [Description("Target directory path, relative to the root. Absolute paths or drive letters are not allowed.")] string path)
+        [Description("Target directory path, relative to the volume root. Absolute paths or drive letters are not allowed.")] string path)
     {
         try
         {
@@ -256,7 +256,7 @@ public class FileOperationTools
             }
             catch (Exception ex)
             {
-                return $"Error: Failed to resolve directory: {ex.Message}";
+                return $"Error: Failed to resolve directory in this volume: {ex.Message}";
             }
 
             string rootWithSep;
@@ -272,19 +272,19 @@ public class FileOperationTools
 
             if (!candidate.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase) && !candidate.Equals(_rootPath, StringComparison.OrdinalIgnoreCase))
             {
-                return "Error: Target directory is outside of the allowed root.";
+                return "Error: Target directory is outside of the allowed volume root.";
             }
 
             try
             {
                 if (!Directory.Exists(candidate))
                 {
-                    return $"Error: Directory not found: {candidate}";
+                    return $"Error: Directory not found in volume: {candidate}";
                 }
             }
             catch (Exception ex)
             {
-                return $"Error: Unable to verify directory: {ex.Message}";
+                return $"Error: Unable to verify directory in volume: {ex.Message}";
             }
 
             _currentPath = candidate;
@@ -300,7 +300,7 @@ public class FileOperationTools
         }
         catch (Exception ex)
         {
-            return $"Error: Unexpected failure while changing directory: {ex.Message}";
+            return $"Error: Unexpected failure while changing directory in this volume: {ex.Message}";
         }
     }
 }
