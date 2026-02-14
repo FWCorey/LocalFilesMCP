@@ -3,7 +3,7 @@
 LocalFilesMCP is an MCP server for file system operations, built with C# and the ModelContextProtocol SDK.
 It allows an Agent to interact with the file system in a secure, sandboxed manner via the MCP protocol.
 
-## What's New in 0.4.1-beta (Breaking)
+## What's New in 0.4.2-beta (Breaking)
 
 - **Added** `Find` and `FReg` tools for glob-based file search and regex content search.
 - **Removed** `ChangeDir` and `ListFiles`. All tools are now stateless — use the `directory` parameter on `Find`, `FReg`, and `ListFolders` instead. **(Breaking)**
