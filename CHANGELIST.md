@@ -17,3 +17,5 @@
 
 ### Fixed
 - **GetVolumeDescription** tool: Implemented file reading (was previously `NotImplementedException`). Returns the contents of the markdown file specified by `--vol-desc`. Returns an error message if no description path is configured or the file is missing.
+- **ListFolders** tool: Now returns paths relative to the volume root instead of absolute paths.
+- **FReg** tool: Now returns file paths relative to the volume root instead of relative to the search directory.
