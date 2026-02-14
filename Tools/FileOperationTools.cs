@@ -119,8 +119,24 @@ public class FileOperationTools
     [Description("Volume Description contains the context and purpose of the filesystem volume exposed via this MCP")]
     public string GetVolumeDescription()
     {
-    
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(MCPServerConfig.DescriptionPath))
+        {
+            return "Error: No volume description configured. Launch the server with --vol-desc <path> to specify one.";
+        }
+
+        if (!TryGetSafePath(MCPServerConfig.DescriptionPath, mustExist: true, expectDirectory: false, out var safePath, out var error))
+        {
+            return error ?? "Error: Invalid volume description path.";
+        }
+
+        try
+        {
+            return File.ReadAllText(safePath!);
+        }
+        catch (Exception ex)
+        {
+            return $"Error: Failed to read volume description: {ex.Message}";
+        }
     }
 
     [McpServerTool]
@@ -137,6 +153,7 @@ public class FileOperationTools
         try
         {
             return Directory.EnumerateDirectories(dir!)
+                .Select(d => Path.GetRelativePath(_rootPath, d))
                 .ToArray();
         }
         catch
@@ -294,7 +311,7 @@ public class FileOperationTools
                 continue; // Skip unreadable files
             }
 
-            var fileRelative = Path.GetRelativePath(dir!, file);
+            var fileRelative = Path.GetRelativePath(_rootPath, file);
             var matchedLineIndices = new List<int>();
 
             for (int i = 0; i < lines.Length; i++)
