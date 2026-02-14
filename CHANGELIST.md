@@ -12,3 +12,8 @@
 - **ListFiles** tool: Superseded by `Find` (e.g., `Find("*", directory)` for single-directory listing, `Find("**/*")` for recursive).
 
 > **Breaking change:** Clients relying on `ChangeDir` or `ListFiles` must migrate to `Find` with an explicit `directory` parameter.
+
+## [0.4.1-beta]
+
+### Fixed
+- **GetVolumeDescription** tool: Implemented file reading (was previously `NotImplementedException`). Returns the contents of the markdown file specified by `--vol-desc`. Returns an error message if no description path is configured or the file is missing.
