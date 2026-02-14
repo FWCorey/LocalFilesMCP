@@ -1,65 +1,48 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <RuntimeIdentifiers>win-x64;win-arm64;osx-arm64;linux-x64;linux-arm64;linux-musl-x64</RuntimeIdentifiers>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- Set up the NuGet package to be an MCP server -->
-    <PackAsTool>true</PackAsTool>
-    <PackageType>McpServer</PackageType>
-    <PackageIcon>MCP_Icon.png</PackageIcon>
-    
-    <!-- Set up the MCP server to be a self-contained application that does not rely on a shared framework -->
-    <SelfContained>true</SelfContained>
-    <PublishSelfContained>true</PublishSelfContained>
+    <PackAsTool>True</PackAsTool>
+    <ToolCommandName>localfilesmcp</ToolCommandName>
+    <IsPackable>True</IsPackable>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
 
-    <!-- Set up the MCP server to be a single file executable -->
-    <PublishSingleFile>true</PublishSingleFile>
     <GenerateWebConfig>false</GenerateWebConfig>
     <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
 
-    <!-- Set recommended package metadata -->
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>LocalFilesMcpServer</PackageId>
-    <PackageVersion>0.2.0-beta</PackageVersion>
-    <PackageTags>AI; MCP; server; stdio</PackageTags>
-    <Description>An MCP server using the MCP C# SDK to allow an agent read-only access to a folder. Handy for allowing your coding agent access to API documentation for example.</Description>
-    <ApplicationIcon>MCP_Icon.ico</ApplicationIcon>
-    <PublishAot>False</PublishAot>
-    <DebugType>None</DebugType>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <Title>Local Files MCP Server</Title>
-    <Version>0.2.0</Version>
+    <PackageVersion>0.4.0-beta</PackageVersion>
     <Authors>FWCorey</Authors>
+    <Description>An MCP server using the MCP C# SDK to allow an agent read-only access to a folder.</Description>
+    <PackageTags>AI; MCP; server; stdio; http; local</PackageTags>
+    <PackageIcon>MCP_Icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
+
+    <PackageProjectUrl>https://github.com/FWCorey/LocalFilesMCP</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FWCorey/LocalFilesMCP</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="MCP_Icon.ico" />
-  </ItemGroup>
-
-  <!-- Include additional files for browsing the MCP server. -->
-  <ItemGroup>
-    <None Include=".mcp\server.json" Pack="true" PackagePath="/.mcp/" />
-    <None Include="README.md" Pack="true" PackagePath="/" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.5.0-preview.1" />
     <PackageReference Include="System.CommandLine" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="MCP_Icon.ico">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Update="MCP_Icon.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="License.txt" Pack="true" PackagePath="/" />
+    <None Include="MCP_Icon.png" Pack="true" PackagePath="/" />
+    <Content Include="MCP_Icon.ico" />
+
+    <None Include=".mcp\server.json" Pack="true" PackagePath="/.mcp/" />
   </ItemGroup>
 
 </Project>

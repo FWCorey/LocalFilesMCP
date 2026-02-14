@@ -1,7 +1,16 @@
 # LocalFilesMCP
 
 LocalFilesMCP is an MCP server for file system operations, built with C# and the ModelContextProtocol SDK.
-It allows you to interact with the file system in a secure, sandboxed manner via the MCP protocol.
+It allows an Agent to interact with the file system in a secure, sandboxed manner via the MCP protocol.
+
+## What's New in 0.4.0-beta (Breaking)
+
+- **Added** `Find` and `FReg` tools for glob-based file search and regex content search.
+- **Removed** `ChangeDir` and `ListFiles`. All tools are now stateless — use the `directory` parameter on `Find`, `FReg`, and `ListFolders` instead.
+
+See the full [CHANGELIST](https://github.com/FWCorey/LocalFilesMCP/blob/main/CHANGELIST.md) for details.
+
+---
 
 ## Command-Line Arguments
 
@@ -30,10 +39,12 @@ If `--root-path` is not specified, the current working directory is used as the 
 If `--port` is not specified, the server will listen on port 5000.
 If `--stdio` is not specified, the server will use HTTP/SSE transport.
 
+---
+
 ## Adding LocalFilesMCP to LM Studio
 
 1. **Build the project**
-Run `dotnet publish -c Release -r win-x64` to produce a standalone executable.
+Run `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true` to produce a standalone executable.
 2. **Locate the executable**
 The output will be in `bin/Release/net10.0/<your-platform>/publish/`.
 3. **Configure LM Studio**
@@ -84,6 +95,83 @@ Use the following example, updating the `command` path to your published executa
 }
 
 ```
+
+---
+
+## Volume Description
+
+The Volume Description file is used to inform agents about the contents and purpose of the filesystem volume exposed
+via MCP. This helps agents like CoPilot and Cursor understand how to interact with the files and directories within
+the volume and not override the solution files context. The description should be clear and concise, providing essential
+information without overwhelming detail.
+
+Must be in markdown format.
+Must start with a **# Volume Description** header.
+You may include any user comments in this header, they will not be returned to the agent.
+You may include additional sections as needed for your specific LLM agent.
+
+Recommended to use a filename that starts with a "." to infer it is hidden.
+
+Recommended to include the following sections:
+- **## Purpose**: A brief explanation of what the volume contains and how agents should interpret it.
+- **## Notes**: Any important details or caveats about the volume, such as:
+  - Paths are relative to the volume root.
+  - This volume may or may not contain project files.
+  - This volume is read-only.
+
+### Example:
+```markdown
+# Volume Description
+
+This is a read-only filesystem volume exposed via MCP.
+
+## Purpose
+This volume contains files and directories that the agent can read and analyze to assist with queries about FooBar projects.
+
+## Notes
+- Paths are relative to the volume root.
+- This volume may contain code files for example only but will not contain any project files.
+- This volume is read-only.
+```
+---
+
+## Tools
+
+The following tools are available in the LocalFilesMCP project:
+
+- **GetVolumeDescription**: Retrieves the volume description.
+  - **Description**: Returns a markdown string describing the contents and purpose of the filesystem volume.
+  - **Parameters**: None.
+
+- **ListFolders**: Lists folders in the specified directory.
+  - **Description**: Lists all folders in the given directory. Defaults to the current directory if no directory is specified.
+  - **Parameters**:
+    - `directory` (optional): The directory to list.
+
+- **Find**: Searches for files matching a glob pattern.
+  - **Description**: Searches for files matching a glob pattern (e.g., `**/*.cs`, `src/**/*.txt`) within the volume.
+  - **Parameters**:
+    - `pattern`: Glob pattern to match files.
+    - `directory` (optional): Directory to search from. Defaults to the current directory.
+
+- **FReg**: Searches file contents for a regex pattern.
+  - **Description**: Searches file contents by regex pattern with configurable output modes and optional context lines.
+  - **Parameters**:
+    - `pattern`: Regex pattern to search for in file contents.
+    - `directory` (optional): Directory to search in. Defaults to the current directory.
+    - `fileGlob` (optional): Glob pattern to filter which files are searched (e.g., `*.cs`). Defaults to all files.
+    - `outputMode` (optional): `files` returns only matching file paths, `content` returns file paths with matching lines and line numbers. Defaults to `content`.
+    - `contextLines` (optional): Number of context lines to include before and after each match. Defaults to 0.
+
+- **ReadFileText**: Reads the text contents of a file.
+  - **Description**: Reads and returns the text content of the specified file.
+  - **Parameters**:
+    - `path`: The path to the file to read.
+
+- **ReadBinaryFile**: Reads the binary contents of a file.
+  - **Description**: Reads and returns the binary content of the specified file.
+  - **Parameters**:
+    - `path`: The path to the file to read.
 
 ## More Information
 
