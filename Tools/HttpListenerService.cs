@@ -241,9 +241,10 @@ public sealed class HttpListenerService : BackgroundService
 
         return toolName switch
         {
-            "ListFiles" => (HttpStatusCode.OK, new { result = tools.ListFiles(GetArg<string>(args, "dir")) }),
             "ListFolders" => (HttpStatusCode.OK, new { result = tools.ListFolders(GetArg<string>(args, "dir")) }),
             "ReadFileText" => ExecuteReadFile(tools, args),
+            "Find" => (HttpStatusCode.OK, new { result = tools.Find(GetArg<string>(args, "pattern")!, GetArg<string>(args, "directory")) }),
+            "FReg" => (HttpStatusCode.OK, new { result = tools.FReg(GetArg<string>(args, "pattern")!, GetArg<string>(args, "directory"), GetArg<string>(args, "fileGlob"), GetArg<string>(args, "outputMode"), GetArg<int?>(args, "contextLines") ?? 0) }),
             _ => (HttpStatusCode.BadRequest, new { error = $"Unknown tool '{toolName}'." })
         };
     }

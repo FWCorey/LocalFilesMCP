@@ -3,6 +3,13 @@
 LocalFilesMCP is an MCP server for file system operations, built with C# and the ModelContextProtocol SDK.
 It allows an Agent to interact with the file system in a secure, sandboxed manner via the MCP protocol.
 
+## What's New in 0.4.0-beta (Breaking)
+
+- **Added** `Find` and `FReg` tools for glob-based file search and regex content search.
+- **Removed** `ChangeDir` and `ListFiles`. All tools are now stateless — use the `directory` parameter on `Find`, `FReg`, and `ListFolders` instead.
+
+See the full [CHANGELIST](https://github.com/FWCorey/LocalFilesMCP/blob/main/CHANGELIST.md) for details.
+
 ---
 
 ## Command-Line Arguments
@@ -141,10 +148,20 @@ The following tools are available in the LocalFilesMCP project:
   - **Parameters**:
     - `directory` (optional): The directory to list.
 
-- **ListFiles**: Lists files in the specified directory.
-  - **Description**: Lists all files in the given directory. Defaults to the current directory if no directory is specified.
+- **Find**: Searches for files matching a glob pattern.
+  - **Description**: Searches for files matching a glob pattern (e.g., `**/*.cs`, `src/**/*.txt`) within the volume.
   - **Parameters**:
-    - `directory` (optional): The directory to list.
+    - `pattern`: Glob pattern to match files.
+    - `directory` (optional): Directory to search from. Defaults to the current directory.
+
+- **FReg**: Searches file contents for a regex pattern.
+  - **Description**: Searches file contents by regex pattern with configurable output modes and optional context lines.
+  - **Parameters**:
+    - `pattern`: Regex pattern to search for in file contents.
+    - `directory` (optional): Directory to search in. Defaults to the current directory.
+    - `fileGlob` (optional): Glob pattern to filter which files are searched (e.g., `*.cs`). Defaults to all files.
+    - `outputMode` (optional): `files` returns only matching file paths, `content` returns file paths with matching lines and line numbers. Defaults to `content`.
+    - `contextLines` (optional): Number of context lines to include before and after each match. Defaults to 0.
 
 - **ReadFileText**: Reads the text contents of a file.
   - **Description**: Reads and returns the text content of the specified file.
@@ -155,11 +172,6 @@ The following tools are available in the LocalFilesMCP project:
   - **Description**: Reads and returns the binary content of the specified file.
   - **Parameters**:
     - `path`: The path to the file to read.
-
-- **ChangeDir**: Changes the current working directory within the root.
-  - **Description**: Changes the current working directory to the specified path and returns the new absolute path or an error message.
-  - **Parameters**:
-    - `path`: The target directory path, relative to the root. Absolute paths or drive letters are not allowed.
 
 ## More Information
 

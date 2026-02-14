@@ -1,5 +1,8 @@
 using System.ComponentModel;
 using System.IO;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.FileSystemGlobbing;
+using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using ModelContextProtocol.Server;
 
 /// <summary>
@@ -9,28 +12,10 @@ public class FileOperationTools
 {
     // Root of the accessible file system for this tool. All operations are confined under this path.
     private readonly string _rootPath;
-    private string _currentPath;
 
     public FileOperationTools()
     {
         _rootPath = Path.GetFullPath(MCPServerConfig.RootPath);
-        _currentPath = _rootPath;
-    }
-
-    private string CurrentRelativePath
-    {
-        get
-        {
-            try
-            {
-                var relativePath = Path.GetRelativePath(_rootPath, _currentPath);
-                return string.IsNullOrEmpty(relativePath) ? "." : relativePath;
-            }
-            catch
-            {
-                return ".";
-            }
-        }
     }
 
     /// <summary>
@@ -72,7 +57,7 @@ public class FileOperationTools
         string fullPath;
         try
         {
-            var combined = Path.Combine(_currentPath, path);
+            var combined = Path.Combine(_rootPath, path);
             fullPath = Path.GetFullPath(combined);
         }
         catch (Exception ex)
@@ -131,6 +116,14 @@ public class FileOperationTools
     }
 
     [McpServerTool]
+    [Description("Volume Description contains the context and purpose of the filesystem volume exposed via this MCP")]
+    public string GetVolumeDescription()
+    {
+    
+        throw new NotImplementedException();
+    }
+
+    [McpServerTool]
     [Description("Lists folders in the specified directory of this volume.")]
     public string[] ListFolders(
         [Description("Directory to list. Defaults to the current directory when not provided.")] string? directory = null)
@@ -152,29 +145,7 @@ public class FileOperationTools
         }
     }
 
-    [McpServerTool]
-    [Description("Lists files in the specified directory of this volume.")]
-    public string[] ListFiles(
-        [Description("Directory in volume to list. Defaults to the current directory when not provided.")] string? directory = null)
-    {
-        var dirArg = string.IsNullOrWhiteSpace(directory) ? "." : directory;
-        if (!TryGetSafePath(dirArg, mustExist: true, expectDirectory: true, out var dir, out _))
-        {
-            return Array.Empty<string>();
-        }
-
-        try
-        {
-            return Directory.EnumerateFiles(dir!)
-                .ToArray();
-        }
-        catch
-        {
-            return Array.Empty<string>();
-        }
-    }
-
-    [McpServerTool]
+[McpServerTool]
     [Description("Reads the text contents of a file in this volume.")]
     public string ReadFileText(
         [Description("Path to the file to read.")] string path)
@@ -223,84 +194,153 @@ public class FileOperationTools
     }
 
     [McpServerTool]
-    [Description("Changes the current working directory within the volume root and returns the new absolute path or an error message.")]
-    public string ChangeDir(
-        [Description("Target directory path, relative to the volume root. Absolute paths or drive letters are not allowed.")] string path)
+    [Description("Searches for files matching a glob pattern within this volume.")]
+    public string[] Find(
+        [Description("Glob pattern to match files (e.g., **/*.cs, src/**/*.txt).")] string pattern,
+        [Description("Directory to search from. Defaults to the current directory.")] string? directory = null)
     {
+        var dirArg = string.IsNullOrWhiteSpace(directory) ? "." : directory;
+        if (!TryGetSafePath(dirArg, mustExist: true, expectDirectory: true, out var dir, out _))
+        {
+            return Array.Empty<string>();
+        }
+
         try
         {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                path = ".";
-            }
+            var matcher = new Matcher();
+            matcher.AddInclude(pattern);
 
-            bool isRooted;
-            try
-            {
-                isRooted = Path.IsPathRooted(path);
-            }
-            catch
-            {
-                return "Error: Invalid path format.";
-            }
+            var directoryInfo = new DirectoryInfoWrapper(new DirectoryInfo(dir!));
+            var result = matcher.Execute(directoryInfo);
 
-            if (isRooted)
-            {
-                return "Error: Absolute paths are not allowed. Provide a path relative to the root.";
-            }
-
-            string candidate;
-            try
-            {
-                candidate = Path.GetFullPath(Path.Combine(_rootPath, path));
-            }
-            catch (Exception ex)
-            {
-                return $"Error: Failed to resolve directory in this volume: {ex.Message}";
-            }
-
-            string rootWithSep;
-            try
-            {
-                var sep = Path.DirectorySeparatorChar.ToString();
-                rootWithSep = _rootPath.EndsWith(sep, StringComparison.Ordinal) ? _rootPath : _rootPath + sep;
-            }
-            catch
-            {
-                rootWithSep = _rootPath + Path.DirectorySeparatorChar;
-            }
-
-            if (!candidate.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase) && !candidate.Equals(_rootPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return "Error: Target directory is outside of the allowed volume root.";
-            }
-
-            try
-            {
-                if (!Directory.Exists(candidate))
-                {
-                    return $"Error: Directory not found in volume: {candidate}";
-                }
-            }
-            catch (Exception ex)
-            {
-                return $"Error: Unable to verify directory in volume: {ex.Message}";
-            }
-
-            _currentPath = candidate;
-            return CurrentRelativePath;
+            return result.Files
+                .Select(f => f.Path)
+                .ToArray();
         }
-        catch (IOException ioEx)
+        catch
         {
-            return $"Error: I/O failure while changing directory: {ioEx.Message}";
+            return Array.Empty<string>();
         }
-        catch (UnauthorizedAccessException uaEx)
+    }
+
+    [McpServerTool]
+    [Description("Searches file contents for a regex pattern within this volume.")]
+    public string FReg(
+        [Description("Regex pattern to search for in file contents.")] string pattern,
+        [Description("Directory to search in. Defaults to the current directory.")] string? directory = null,
+        [Description("Glob pattern to filter which files are searched (e.g., *.cs). Defaults to all files.")] string? fileGlob = null,
+        [Description("Output mode: 'files' returns only matching file paths, 'content' returns file paths with matching lines and line numbers. Defaults to 'content'.")] string? outputMode = null,
+        [Description("Number of context lines to include before and after each match. Only applies when outputMode is 'content'. Defaults to 0.")] int contextLines = 0)
+    {
+        var dirArg = string.IsNullOrWhiteSpace(directory) ? "." : directory;
+        if (!TryGetSafePath(dirArg, mustExist: true, expectDirectory: true, out var dir, out var error))
         {
-            return $"Error: Access denied while changing directory: {uaEx.Message}";
+            return error ?? "Error: Invalid directory.";
+        }
+
+        Regex regex;
+        try
+        {
+            regex = new Regex(pattern, RegexOptions.Compiled, TimeSpan.FromSeconds(5));
+        }
+        catch (ArgumentException ex)
+        {
+            return $"Error: Invalid regex pattern: {ex.Message}";
+        }
+
+        // Enumerate files, optionally filtered by glob
+        string[] files;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(fileGlob))
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(fileGlob);
+                var directoryInfo = new DirectoryInfoWrapper(new DirectoryInfo(dir!));
+                var globResult = matcher.Execute(directoryInfo);
+                files = globResult.Files
+                    .Select(f => Path.Combine(dir!, f.Path))
+                    .ToArray();
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(dir!, "*", SearchOption.AllDirectories).ToArray();
+            }
         }
         catch (Exception ex)
         {
-            return $"Error: Unexpected failure while changing directory in this volume: {ex.Message}";
+            return $"Error: Failed to enumerate files: {ex.Message}";
         }
+
+        var filesMode = string.Equals(outputMode, "files", StringComparison.OrdinalIgnoreCase)
+                     || string.Equals(outputMode, "files_with_matches", StringComparison.OrdinalIgnoreCase);
+
+        var results = new List<string>();
+
+        foreach (var file in files)
+        {
+            // Validate each file stays within root
+            var relativePath = Path.GetRelativePath(dir!, file);
+            if (!TryGetSafePath(relativePath, mustExist: true, expectDirectory: false, out _, out _))
+                continue;
+
+            string[] lines;
+            try
+            {
+                lines = File.ReadAllLines(file);
+            }
+            catch
+            {
+                continue; // Skip unreadable files
+            }
+
+            var fileRelative = Path.GetRelativePath(dir!, file);
+            var matchedLineIndices = new List<int>();
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                try
+                {
+                    if (regex.IsMatch(lines[i]))
+                    {
+                        matchedLineIndices.Add(i);
+                    }
+                }
+                catch (RegexMatchTimeoutException)
+                {
+                    break; // Skip file on timeout
+                }
+            }
+
+            if (matchedLineIndices.Count == 0)
+                continue;
+
+            if (filesMode)
+            {
+                results.Add(fileRelative);
+            }
+            else
+            {
+                // Content mode: output matching lines with optional context
+                var emittedLines = new HashSet<int>();
+                foreach (var lineIdx in matchedLineIndices)
+                {
+                    int start = Math.Max(0, lineIdx - contextLines);
+                    int end = Math.Min(lines.Length - 1, lineIdx + contextLines);
+
+                    for (int i = start; i <= end; i++)
+                    {
+                        if (emittedLines.Add(i))
+                        {
+                            var prefix = i == lineIdx ? ":" : "-";
+                            results.Add($"{fileRelative}{prefix}{i + 1}{prefix} {lines[i]}");
+                        }
+                    }
+                }
+            }
+        }
+
+        return results.Count == 0 ? "No matches found." : string.Join("\n", results);
     }
+
 }
