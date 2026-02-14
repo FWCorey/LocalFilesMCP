@@ -153,6 +153,7 @@ public class FileOperationTools
         try
         {
             return Directory.EnumerateDirectories(dir!)
+                .Select(d => Path.GetRelativePath(_rootPath, d))
                 .ToArray();
         }
         catch
@@ -310,7 +311,7 @@ public class FileOperationTools
                 continue; // Skip unreadable files
             }
 
-            var fileRelative = Path.GetRelativePath(dir!, file);
+            var fileRelative = Path.GetRelativePath(_rootPath, file);
             var matchedLineIndices = new List<int>();
 
             for (int i = 0; i < lines.Length; i++)
